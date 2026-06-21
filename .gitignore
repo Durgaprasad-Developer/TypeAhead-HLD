@@ -20,6 +20,7 @@ frontend/node_modules/
 
 # ─── Dataset — processed CSV is generated locally, don't commit ──────────────
 dataset/processed/
+dataset/raw/
 
 # ─── IDEs ────────────────────────────────────────────────────────────────────
 .idea/

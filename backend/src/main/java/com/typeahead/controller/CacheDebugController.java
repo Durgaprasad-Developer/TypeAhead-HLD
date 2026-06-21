@@ -13,6 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
  * Controller exposing consistent hash ring and cache nodes introspection endpoint.
  *
@@ -32,12 +40,42 @@ public class CacheDebugController {
     }
 
     /**
-     * Dumps the current consistent hash ring size, registered nodes, and their cached values.
+     * Dumps the current consistent hash ring size, registered nodes, and their cached values,
+     * or inspects consistent hash routing for a single prefix query.
      *
-     * @return CacheDebugResponse DTO.
+     * @param prefix Optional prefix to simulate routing.
+     * @return CacheDebugResponse DTO or prefix routing detail Map.
      */
     @GetMapping
-    public CacheDebugResponse getCacheDebugInfo() {
+    public ResponseEntity<?> getCacheDebugInfo(@RequestParam(value = "prefix", required = false) String prefix) {
+        if (prefix != null && !prefix.trim().isEmpty()) {
+            String normalized = prefix.trim().toLowerCase();
+            log.info("CacheDebugController: simulating routing for prefix '{}'", normalized);
+
+            CacheNode node = consistentHashRing.getNode(normalized);
+            long hash = ((long) com.typeahead.core.hash.MurmurHash3.hash32(normalized)) & 0xFFFFFFFFL;
+            boolean isCached = false;
+            List<String> suggestions = java.util.Collections.emptyList();
+
+            if (node != null) {
+                List<String> cached = node.get(normalized);
+                if (cached != null) {
+                    isCached = true;
+                    suggestions = cached;
+                }
+            }
+
+            Map<String, Object> routingDetail = new HashMap<>();
+            routingDetail.put("prefix", normalized);
+            routingDetail.put("assignedNode", node != null ? node.getId() : null);
+            routingDetail.put("assignedNodeName", node != null ? node.getName() : null);
+            routingDetail.put("hash", hash);
+            routingDetail.put("isCached", isCached);
+            routingDetail.put("suggestions", suggestions);
+
+            return ResponseEntity.ok(routingDetail);
+        }
+
         log.info("CacheDebugController: fetching cache debug dump");
 
         List<CacheDebugResponse.NodeDebugInfo> nodeInfos = consistentHashRing.getPhysicalNodes().stream()
@@ -49,6 +87,7 @@ public class CacheDebugController {
             ))
             .collect(Collectors.toList());
 
-        return new CacheDebugResponse(nodeInfos, consistentHashRing.size());
+        CacheDebugResponse response = new CacheDebugResponse(nodeInfos, consistentHashRing.size());
+        return ResponseEntity.ok(response);
     }
 }

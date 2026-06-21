@@ -22,6 +22,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DataConfig {
 
+    @org.springframework.beans.factory.annotation.Value("${typeahead.trending.weight-overall:0.3}")
+    private double weightOverall;
+
+    @org.springframework.beans.factory.annotation.Value("${typeahead.trending.weight-recent:0.7}")
+    private double weightRecent;
+
     @Bean
     public Trie trie() {
         return new Trie();
@@ -30,5 +36,10 @@ public class DataConfig {
     @Bean
     public QueryIndex queryIndex() {
         return new QueryIndex();
+    }
+
+    @Bean
+    public com.typeahead.core.ranking.SuggestionRankingService suggestionRankingService() {
+        return new com.typeahead.core.ranking.SuggestionRankingService(weightOverall, weightRecent);
     }
 }
