@@ -1,5 +1,6 @@
 package com.typeahead.service;
 
+import com.typeahead.core.batch.BatchQueue;
 import com.typeahead.core.dataset.QueryIndex;
 import com.typeahead.core.dataset.QueryRecord;
 import com.typeahead.core.trie.Trie;
@@ -17,9 +18,10 @@ import java.util.Optional;
  * ({@link QueryIndex} and {@link Trie}) immediately so subsequent suggestion requests
  * see the updated counts.
  *
+ * <p>Enqueues updates to the {@link BatchQueue} for background persistence.
+ *
  * <p>Later Milestones will:
  * <ul>
- *   <li>Enqueue updates into the BatchQueue for background database persistence (Milestone 9).</li>
  *   <li>Invalidate affected prefixes in the distributed cache layer (Milestone 11).</li>
  * </ul>
  */
@@ -30,10 +32,12 @@ public class SearchService {
 
     private final QueryIndex queryIndex;
     private final Trie       trie;
+    private final BatchQueue batchQueue;
 
-    public SearchService(QueryIndex queryIndex, Trie trie) {
+    public SearchService(QueryIndex queryIndex, Trie trie, BatchQueue batchQueue) {
         this.queryIndex = queryIndex;
         this.trie       = trie;
+        this.batchQueue = batchQueue;
     }
 
     /**
@@ -65,7 +69,9 @@ public class SearchService {
             log.debug("SearchService: inserted new query record in-memory: {}", record);
         }
 
-        // TODO Milestone 9: Enqueue update into BatchQueue for DB persistence
+        // Enqueue update into BatchQueue for DB persistence
+        batchQueue.enqueue(query);
+
         // TODO Milestone 11: Invalidate cache for all prefixes of this query
     }
 }
