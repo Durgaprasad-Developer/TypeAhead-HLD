@@ -78,4 +78,4 @@ spring:
 
 typeahead:
   dataset:
-    skip-on-startup: true
+    skip-on-startup: false
