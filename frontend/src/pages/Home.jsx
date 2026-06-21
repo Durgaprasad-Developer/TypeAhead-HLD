@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import SearchBar from '../components/SearchBar';
+import { submitSearch } from '../api/searchApi';
 
 /**
  * Home page — Search page (/).
  * Renders the main search landing interface with the SearchBar.
- * Displays temporary submission feedback (to be wired to POST /search in Milestone 7).
+ * Displays submission feedback wired to POST /search.
  */
 export default function Home() {
   const [lastSearch, setLastSearch] = useState(null);
 
-  const handleSearch = (query) => {
+  const handleSearch = async (query) => {
     console.log('Search submitted:', query);
-    setLastSearch(query);
-    // Temporary: automatically clear the search notification after 4 seconds
-    setTimeout(() => {
-      setLastSearch((prev) => (prev === query ? null : prev));
-    }, 4000);
+    try {
+      await submitSearch(query);
+      setLastSearch(query);
+      // Automatically clear the search notification after 4 seconds
+      setTimeout(() => {
+        setLastSearch((prev) => (prev === query ? null : prev));
+      }, 4000);
+    } catch (err) {
+      console.error('Failed to submit search:', err);
+    }
   };
 
   return (
