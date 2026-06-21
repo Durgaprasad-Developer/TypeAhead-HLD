@@ -1,6 +1,8 @@
 package com.typeahead.service;
 
 import com.typeahead.core.batch.BatchQueue;
+import com.typeahead.core.cache.CacheNode;
+import com.typeahead.core.cache.ConsistentHashRing;
 import com.typeahead.core.dataset.QueryIndex;
 import com.typeahead.core.dataset.QueryRecord;
 import com.typeahead.core.trie.Trie;
@@ -20,24 +22,26 @@ import java.util.Optional;
  *
  * <p>Enqueues updates to the {@link BatchQueue} for background persistence.
  *
- * <p>Later Milestones will:
- * <ul>
- *   <li>Invalidate affected prefixes in the distributed cache layer (Milestone 11).</li>
- * </ul>
+ * <p>Per DESIGN.md §10.4, invalidates all query prefixes in the consistent hashing cache.
  */
 @Service
 public class SearchService {
 
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
-    private final QueryIndex queryIndex;
-    private final Trie       trie;
-    private final BatchQueue batchQueue;
+    private final QueryIndex         queryIndex;
+    private final Trie               trie;
+    private final BatchQueue         batchQueue;
+    private final ConsistentHashRing consistentHashRing;
 
-    public SearchService(QueryIndex queryIndex, Trie trie, BatchQueue batchQueue) {
-        this.queryIndex = queryIndex;
-        this.trie       = trie;
-        this.batchQueue = batchQueue;
+    public SearchService(QueryIndex queryIndex,
+                         Trie trie,
+                         BatchQueue batchQueue,
+                         ConsistentHashRing consistentHashRing) {
+        this.queryIndex         = queryIndex;
+        this.trie               = trie;
+        this.batchQueue         = batchQueue;
+        this.consistentHashRing = consistentHashRing;
     }
 
     /**
@@ -72,6 +76,14 @@ public class SearchService {
         // Enqueue update into BatchQueue for DB persistence
         batchQueue.enqueue(query);
 
-        // TODO Milestone 11: Invalidate cache for all prefixes of this query
+        // Invalidate cache for all prefixes of this query
+        for (int i = 1; i <= query.length(); i++) {
+            String prefix = query.substring(0, i);
+            CacheNode node = consistentHashRing.getNode(prefix);
+            if (node != null) {
+                node.invalidate(prefix);
+                log.debug("SearchService: invalidated cache key '{}' on node '{}'", prefix, node.getId());
+            }
+        }
     }
 }
