@@ -1,0 +1,33 @@
+# ─── Sensitive design docs (kept local only) ─────────────────────────────────
+ASSIGNMENT.md
+DESIGN.md
+PROMPT.md
+dataset.md
+databsetouse.md
+
+# ─── Environment / secrets ───────────────────────────────────────────────────
+.env
+*.env.local
+
+# ─── Build output ────────────────────────────────────────────────────────────
+backend/target/
+frontend/dist/
+frontend/.vite/
+
+# ─── Node ────────────────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+
+# ─── Dataset — processed CSV is generated locally, don't commit ──────────────
+dataset/processed/
+
+# ─── IDEs ────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# ─── OS artefacts ────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

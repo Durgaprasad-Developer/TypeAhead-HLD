@@ -1,0 +1,29 @@
+# Test profile — application properties used when @ActiveProfiles("test") is active.
+# Overrides the main application.yml to skip DB and DatasetLoader.
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+# Disable DatasetLoader during tests (no processed CSV needed)
+typeahead:
+  dataset:
+    skip-on-startup: true
+  cache:
+    node-count: 3
+    virtual-nodes-per-node: 150
+  batch:
+    interval-seconds: 10
+    max-size: 500
+  trending:
+    window-days: 7
+    recompute-interval-minutes: 5
+    weight-overall: 0.3
+    weight-recent: 0.7

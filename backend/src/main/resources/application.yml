@@ -1,0 +1,60 @@
+spring:
+  datasource:
+    url: ${SUPABASE_DB_URL}          # e.g. jdbc:postgresql://<host>:6543/postgres?sslmode=require
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5           # Supabase free tier caps total connections;
+                                      # this app only writes via BatchWriter, never
+                                      # reads from DB on the request path, so a
+                                      # small pool is sufficient.
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update               # fine for assignment scope; use Flyway/Liquibase
+                                      # for production
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+
+# Spring Actuator — expose health endpoint
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# OpenAPI / Swagger UI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+server:
+  port: 8080
+
+# Application-specific configuration (DESIGN.md §13.6)
+typeahead:
+  cache:
+    node-count: 3
+    virtual-nodes-per-node: 150
+  batch:
+    interval-seconds: 10
+    max-size: 500
+  trending:
+    window-days: 7
+    recompute-interval-minutes: 5
+    weight-overall: 0.3
+    weight-recent: 0.7
+  dataset:
+    raw-path: dataset/raw/user-ct-test-collection-02.txt
+    processed-path: dataset/processed/queries.csv
