@@ -33,15 +33,18 @@ public class SearchService {
     private final Trie               trie;
     private final BatchQueue         batchQueue;
     private final ConsistentHashRing consistentHashRing;
+    private final TrendingService    trendingService;
 
     public SearchService(QueryIndex queryIndex,
                          Trie trie,
                          BatchQueue batchQueue,
-                         ConsistentHashRing consistentHashRing) {
+                         ConsistentHashRing consistentHashRing,
+                         TrendingService trendingService) {
         this.queryIndex         = queryIndex;
         this.trie               = trie;
         this.batchQueue         = batchQueue;
         this.consistentHashRing = consistentHashRing;
+        this.trendingService    = trendingService;
     }
 
     /**
@@ -75,6 +78,9 @@ public class SearchService {
 
         // Enqueue update into BatchQueue for DB persistence
         batchQueue.enqueue(query);
+
+        // Register search event for rolling window trending calculation
+        trendingService.registerSearchEvent(query);
 
         // Invalidate cache for all prefixes of this query
         for (int i = 1; i <= query.length(); i++) {
