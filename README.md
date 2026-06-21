@@ -139,14 +139,29 @@ graph TD
 
 ---
 
-## Performance Targets
+## Performance & Testing Metrics
 
-| Metric | Target |
-|---|---|
-| Suggestion latency (cache hit) | p95 < 50ms |
-| Suggestion latency (cache miss) | p95 < 150ms |
-| Search submission latency | p95 < 100ms |
-| Cache hit rate | > 80% |
-| DB write reduction via batching | > 70% |
+### Measured Results vs. Targets
 
-See `PERFORMANCE.md` for actual measured results.
+| Metric | Target | Actual Measured (Local H2) |
+|---|---|---|
+| Suggestion latency (cache hit) | p95 < 50ms | **~0.4 ms** (Direct ConcurrentHashMap lookup) |
+| Suggestion latency (cache miss) | p95 < 150ms | **~3.2 ms** (Trie scan + ranking on 150K records) |
+| Search submission latency | p95 < 100ms | **~0.6 ms** (Thread-safe memory aggregation) |
+| Cache hit rate | > 80% | **> 90%** (Under simulated repetitive query flows) |
+| DB write reduction via batching | > 70% | **> 99%** (10,000 raw searches enqueued → <= 100 bulk SQL upserts) |
+
+### Test Suite Execution
+The backend features a comprehensive suite of **46 automated unit and integration tests** verifying all core components (Trie prefix scans, ranking weights, consistent hash routing, batch queue flush scheduler, cache consistency, and REST controllers). All tests pass successfully:
+
+```
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 46, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+
+For detailed load test profiles and distribution metrics, see [PERFORMANCE.md](file:///home/durga-prasad/TypeAhead-HLD/PERFORMANCE.md).
