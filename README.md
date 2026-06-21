@@ -94,17 +94,39 @@ Open **http://localhost:5173** in your browser.
 
 ## Architecture
 
-See `DESIGN.md` (Section 8) for the full architecture diagram and rationale for every design decision.
+The system follows a highly optimized, read-heavy distributed layout:
 
-Key components:
+```mermaid
+graph TD
+    User([Browser Client]) -->|1. GET /suggest?q=ap| API[SuggestionController]
+    User -->|4. POST /search query=apple| SearchAPI[SearchController]
 
+    API -->|2. Check Ring Cache| Ring[ConsistentHashRing]
+    Ring -->|Node Routing Map| Cache[CacheNode Shards]
+    Cache -->|Cache Hit| API
+
+    Cache -.->|Cache Miss| TrieLookup[Trie Prefix Scan]
+    TrieLookup -->|3. Rank Top 10| Ranking[SuggestionRankingService]
+    Ranking -->|Update Cache Node| Cache
+
+    SearchAPI -->|5. Update in-memory counts| TrieIndex[Trie + QueryIndex]
+    SearchAPI -->|6. Enqueue Update| Queue[BatchQueue]
+    SearchAPI -->|7. Invalidate Prefix Caches| Ring
+
+    Scheduler[BatchWriter Scheduler] -->|8. Drain Queue & Aggregate| Queue
+    Scheduler -->|9. Batch Bulk Upsert| DB[(PostgreSQL Database)]
+
+    TrendScheduler[TrendingService Scheduler] -->|10. Recompute sliding window counts| TrieIndex
+    TrendScheduler -->|11. Flush Cache Nodes| Ring
 ```
-React (debounced) → Spring Boot REST
-  → ConsistentHashRing → CacheNode (hit: return)
-  → Trie + QueryIndex (miss: scan + rank → cache)
-  → BatchQueue → BatchWriter (periodic flush) → PostgreSQL
-  → TrendingService (scheduled recompute + cache invalidation)
-```
+
+### Key Components
+
+* **ConsistentHashRing:** Maps incoming search prefixes to physical cache nodes using 32-bit MurmurHash3. Features 150 virtual nodes per physical node to prevent key skew.
+* **CacheNode Shards:** Multi-instance isolated caches holding prefix-to-suggestion entries.
+* **Trie + QueryIndex:** Memory-resident indexes enabling fast string prefix scanning ($O(L)$ where $L$ is query length) and lookup.
+* **BatchQueue + BatchWriter:** Decouples search persistence, collapsing thousands of concurrent SQL updates into high-performance bulk-upserts.
+* **TrendingService:** Automatically updates counts within a sliding window (7-day window) to prioritize fresh, trending queries.
 
 ---
 
