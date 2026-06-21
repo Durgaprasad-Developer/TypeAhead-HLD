@@ -27,7 +27,7 @@ A real-time search suggestion system backed by an AOL query log dataset (~1.24M 
 ### 1. Clone & enter the repo
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Durgaprasad-Developer/TypeAhead-HLD
 cd TypeAhead-HLD
 ```
 
