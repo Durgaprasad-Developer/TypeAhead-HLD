@@ -74,7 +74,7 @@ npm run dev
 
 Open **http://localhost:5173** in your browser.
 
-> The backend loads the dataset at startup (~30–90 seconds depending on hardware).
+> The backend loads the dataset at startup (~2 seconds due to the 150,000 query cap).
 > The health check endpoint `GET http://localhost:8080/actuator/health` returns `{"status":"UP"}` once ready.
 
 ---
@@ -133,9 +133,9 @@ graph TD
 ## Dataset
 
 - **Source:** AOL Search Query Log (`user-ct-test-collection-02.txt`)
-- **Size:** 3.6M rows, ~1.24M unique queries
-- **Format:** Tab-separated; preprocessing aggregates by query to produce `query,count,lastSeen` CSV
-- **Used unfiltered** (deliberate — real search log data; see DESIGN.md §9.1)
+- **Size:** 3.6M raw rows aggregated and capped to the **top 150,000 queries by frequency**
+- **Format:** CSV with `query,count,lastSeen` fields
+- **Aggregated & Capped:** Capping keeps in-memory loading down to ~2 seconds while preserving the most relevant queries for autocompletion.
 
 ---
 
